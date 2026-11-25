@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LabJogos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14122b; --panel:#201c42; --panel-2:#2a2556; --ink:#f3f0ff; --muted:#a9a3d1;
+  --accent:#ffd23f; --violet:#7c5cff;
+  --display:"Baloo 2","Trebuchet MS",system-ui,sans-serif;
+  --body:"Nunito",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);line-height:1.5;min-height:100vh}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+header{padding:48px 0 28px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2.6rem,8vw,4.6rem);line-height:1;letter-spacing:-.02em}
+h1 span{display:inline-block;background:var(--accent);color:var(--bg);padding:0 .22em;border-radius:.18em;transform:rotate(-2deg)}
+.sub{color:var(--muted);margin-top:14px;max-width:46ch}
+.bar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:26px 0 22px}
+.bar input{flex:1 1 240px;max-width:360px;background:var(--panel);border:2px solid transparent;color:var(--ink);font:inherit;padding:10px 16px;border-radius:999px}
+.bar input:focus{outline:none;border-color:var(--violet)}
+#count{color:var(--muted);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding-bottom:64px}
+.card{background:var(--panel);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;transition:transform .18s,background .18s}
+.card:hover,.card:focus-visible{transform:translateY(-4px);background:var(--panel-2);outline:none}
+.card:focus-visible{box-shadow:0 0 0 3px var(--accent)}
+.thumb{position:relative;aspect-ratio:4/3;background:#000;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ph{width:100%;height:100%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:3.4rem;color:rgba(255,255,255,.85)}
+.play{position:absolute;right:10px;bottom:10px;background:var(--accent);color:var(--bg);font-family:var(--display);font-weight:800;padding:2px 14px;border-radius:999px;opacity:0;transform:translateY(6px);transition:.18s}
+.card:hover .play,.card:focus-visible .play{opacity:1;transform:none}
+.info{padding:14px 16px 18px}
+.info h2{font-family:var(--display);font-weight:600;font-size:1.25rem;line-height:1.2}
+.info p{color:var(--muted);font-size:.92rem;margin-top:4px}
+.empty{grid-column:1/-1;color:var(--muted);padding:40px 0;text-align:center}
+footer{color:var(--muted);font-size:.85rem;padding:0 0 40px}
+@media (prefers-reduced-motion:reduce){.card,.play{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Lab<span>Jogos</span></h1>
+    <p class="sub">Meus jogos e experimentos feitos no GitHub. Escolha um e jogue direto no navegador.</p>
+  </header>
+
+  <div class="bar">
+    <input id="busca" type="search" placeholder="Buscar jogo..." aria-label="Buscar jogo">
+    <span id="count"></span>
+  </div>
+
+  <main class="grid" id="grid"></main>
+  <footer>Atualizado em <span id="ano"></span></footer>
+</div>
+
+<script>
+/* ============================================================
+   PARA ADICIONAR UM JOGO: copie um bloco { ... }, cole no fim da
+   lista e preencha. Para a imagem, salve um print (de preferência
+   proporção 4:3, ex.: 800x600) na pasta "img" e informe o caminho.
+   Sem imagem? Deixe image vazio e aparece uma capa colorida.
+   ============================================================ */
+const JOGOS = [
+  { titulo: "Jogo da Memória", descricao: "Encontre todos os pares de cartas.", url: "https://SEU-USUARIO.github.io/jogo-memoria/", image: "img/memoria.png" },
+  { titulo: "Snake", descricao: "A clássica cobrinha, agora com placar.", url: "https://SEU-USUARIO.github.io/snake/", image: "img/snake.png" },
+  { titulo: "Forca", descricao: "Adivinhe a palavra antes de errar demais.", url: "https://SEU-USUARIO.github.io/forca/", image: "" },
+  { titulo: "Quiz de Capitais", descricao: "Teste o que você sabe de geografia.", url: "https://SEU-USUARIO.github.io/quiz-capitais/", image: "" },
+  { titulo: "Pedra, Papel e Tesoura", descricao: "Desafie o computador em rodadas rápidas.", url: "https://SEU-USUARIO.github.io/ppt/", image: "" },
+  { titulo: "Campo Minado", descricao: "Abra o tabuleiro sem pisar em minas.", url: "https://SEU-USUARIO.github.io/campo-minado/", image: "" }
+];
+
+const grid = document.getElementById("grid");
+const count = document.getElementById("count");
+document.getElementById("ano").textContent = new Date().toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+
+function hue(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h}
+function capa(j){
+  const h=hue(j.titulo);
+  const d=document.createElement("div");
+  d.className="ph";
+  d.style.background=`linear-gradient(135deg,hsl(${h} 70% 45%),hsl(${(h+50)%360} 70% 30%))`;
+  d.textContent=j.titulo.trim().slice(0,2).toUpperCase();
+  return d;
+}
+function card(j){
+  const a=document.createElement("a");
+  a.className="card"; a.href=j.url; a.target="_blank"; a.rel="noopener";
+  const t=document.createElement("div"); t.className="thumb";
+  if(j.image){
+    const img=document.createElement("img");
+    img.src=j.image; img.alt="Tela do jogo "+j.titulo; img.loading="lazy";
+    img.onerror=()=>img.replaceWith(capa(j));
+    t.appendChild(img);
+  } else t.appendChild(capa(j));
+  const p=document.createElement("span"); p.className="play"; p.textContent="Jogar";
+  t.appendChild(p);
+  const i=document.createElement("div"); i.className="info";
+  const h=document.createElement("h2"); h.textContent=j.titulo;
+  const d=document.createElement("p"); d.textContent=j.descricao;
+  i.append(h,d); a.append(t,i);
+  return a;
+}
+function render(filtro=""){
+  const q=filtro.trim().toLowerCase();
+  const lista=JOGOS.filter(j=>(j.titulo+" "+j.descricao).toLowerCase().includes(q));
+  grid.replaceChildren(...lista.map(card));
+  if(!lista.length){const e=document.createElement("p");e.className="empty";e.textContent="Nenhum jogo encontrado. Tente outra palavra.";grid.appendChild(e)}
+  count.textContent=lista.length+(lista.length===1?" jogo":" jogos");
+}
+document.getElementById("busca").addEventListener("input",e=>render(e.target.value));
+render();
+</script>
+</body>
+</html>
